@@ -134,16 +134,40 @@ def plot_fraud_rate():
 
 def plot_histogram():
     # Modification : Utilisation des fonctions de chargement depuis Drive
-    df_before = load_data(URL_BEFORE, "creditcard_before.csv")
-    df_after  = load_data(URL_AFTER, "creditcard_after.csv")
-    
+    # ATTENTION : La fonction load_data originale n'incluait pas le paramètre 'df_type',
+    # mais puisque ce paramètre a été ajouté dans la correction précédente pour
+    # la création du DataFrame de secours, nous devons l'inclure ici pour la cohérence.
+    df_before = load_data(URL_BEFORE, "creditcard_before.csv", 'BEFORE')
+    df_after = load_data(URL_AFTER, "creditcard_after.csv", 'AFTER')
+
     if 'Amount' not in df_before.columns or 'Amount' not in df_after.columns:
-         return go.Figure().update_layout(title="Erreur de chargement des données: Colonne 'Amount' manquante")
-         
+        return go.Figure().update_layout(title="Erreur de chargement des données: Colonne 'Amount' manquante")
+
     fig = go.Figure()
-    fig.add_histogram(x=df_before['Amount'].dropna(), name='Avant', marker_color=COLOR_BEFORE, opacity=0.75, nbinsx=70)
-    fig.add_histogram(x=df_after['Amount'], name='Après', marker_color=COLOR_AFTER, opacity=0.75, nbinsx=70)
-    fig.update_layout(barmode='overlay', title="Distribution des montants des transactions")
+    # 1. Utiliser dropna() pour df_after également (si les données de secours sont utilisées)
+    # 2. S'assurer que les deux histogrammes utilisent les mêmes bins pour une meilleure comparaison
+    # 3. Limiter l'axe x à une plage raisonnable (ex: 0 à 2000) car les montants sont généralement faibles
+    
+    # Calculer une plage pour l'histogramme, en évitant les valeurs extrêmes
+    max_amount = 2000 
+    
+    # Filtrer les montants dans la plage
+    amounts_before = df_before['Amount'].dropna().loc[df_before['Amount'] <= max_amount]
+    amounts_after = df_after['Amount'].dropna().loc[df_after['Amount'] <= max_amount]
+    
+    # Utiliser un nombre de bins raisonnable (ou laisser plotly calculer si nbinsx est absent, mais 70 est OK)
+    nb_bins = 70
+
+    fig.add_histogram(x=amounts_before, name='Avant', marker_color=COLOR_BEFORE, opacity=0.75, nbinsx=nb_bins)
+    fig.add_histogram(x=amounts_after, name='Après', marker_color=COLOR_AFTER, opacity=0.75, nbinsx=nb_bins)
+
+    fig.update_layout(
+        barmode='overlay', 
+        title="Distribution des montants des transactions (Zoom sur < 2000 €)",
+        xaxis_title="Montant (Euros)",
+        yaxis_title="Nombre de Transactions",
+        xaxis=dict(range=[0, max_amount])
+    )
     return fixed(fig)
 
 def plot_roc():
