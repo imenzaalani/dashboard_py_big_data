@@ -134,42 +134,16 @@ def plot_fraud_rate():
 
 def plot_histogram():
     # Modification : Utilisation des fonctions de chargement depuis Drive
-    # Ajout des arguments 'df_type' pour correspondre à la nouvelle signature de load_data
-    df_before = load_data(URL_BEFORE, "creditcard_before.csv", 'BEFORE')
-    df_after = load_data(URL_AFTER, "creditcard_after.csv", 'AFTER')
-
+    df_before = load_data(URL_BEFORE, "creditcard_before.csv")
+    df_after  = load_data(URL_AFTER, "creditcard_after.csv")
+    
     if 'Amount' not in df_before.columns or 'Amount' not in df_after.columns:
-        return go.Figure().update_layout(title="Erreur de chargement des données: Colonne 'Amount' manquante")
-
+         return go.Figure().update_layout(title="Erreur de chargement des données: Colonne 'Amount' manquante")
+         
     fig = go.Figure()
-    
-    # Correction de l'erreur dans la ligne suivante.
-    # L'utilisation de .loc[condition] après .dropna() peut échouer si l'index est réinitialisé.
-    # Il est plus sûr d'appliquer le filtre directement sur la colonne après dropna() ou sur le DataFrame.
-
-    # Calculer une plage pour l'histogramme, en évitant les valeurs extrêmes
-    max_amount = 2000 
-    
-    # Filtrer les montants dans la plage de manière plus robuste
-    amounts_before = df_before['Amount'].dropna()
-    amounts_before = amounts_before[amounts_before <= max_amount]
-    
-    amounts_after = df_after['Amount'].dropna()
-    amounts_after = amounts_after[amounts_after <= max_amount]
-
-    # Utiliser un nombre de bins raisonnable (ou laisser plotly calculer si nbinsx est absent, mais 70 est OK)
-    nb_bins = 70
-
-    fig.add_histogram(x=amounts_before, name='Avant', marker_color=COLOR_BEFORE, opacity=0.75, nbinsx=nb_bins)
-    fig.add_histogram(x=amounts_after, name='Après', marker_color=COLOR_AFTER, opacity=0.75, nbinsx=nb_bins)
-
-    fig.update_layout(
-        barmode='overlay', 
-        title="Distribution des montants des transactions (Zoom sur < 2000 €)",
-        xaxis_title="Montant (Euros)",
-        yaxis_title="Nombre de Transactions",
-        xaxis=dict(range=[0, max_amount])
-    )
+    fig.add_histogram(x=df_before['Amount'].dropna(), name='Avant', marker_color=COLOR_BEFORE, opacity=0.75, nbinsx=70)
+    fig.add_histogram(x=df_after['Amount'], name='Après', marker_color=COLOR_AFTER, opacity=0.75, nbinsx=70)
+    fig.update_layout(barmode='overlay', title="Distribution des montants des transactions")
     return fixed(fig)
 
 def plot_roc():
@@ -240,14 +214,14 @@ def plot_correlation():
         fig = go.Figure()
         fig.add_bar(y=corr.index, x=corr.values, orientation='h', marker_color=corr.values, marker_colorscale='Viridis',
                     text=[f"{v:.3f}" for v in corr.values], textposition='outside')
-        fig.update_layout(title="Top 10 des variables les plus discriminantes (Simulation)", yaxis=dict(autorange="reversed"))
+        fig.update_layout(title="Top 6 des variables les plus discriminantes", yaxis=dict(autorange="reversed"))
         return fixed(fig, h=480)
 
     # Créer le graphique avec les données réelles (si succès)
     fig = go.Figure()
     fig.add_bar(y=corr.index, x=corr.values, orientation='h', marker_color=corr.values, marker_colorscale='Viridis',
                 text=[f"{v:.3f}" for v in corr.values], textposition='outside')
-    fig.update_layout(title="Top 10 des variables les plus discriminantes", yaxis=dict(autorange="reversed"))
+    fig.update_layout(title="Top 6 des variables les plus discriminantes", yaxis=dict(autorange="reversed"))
     return fixed(fig, h=480)
 
 def plot_confusion_matrix(matrix):
