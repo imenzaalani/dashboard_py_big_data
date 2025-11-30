@@ -134,9 +134,7 @@ def plot_fraud_rate():
 
 def plot_histogram():
     # Modification : Utilisation des fonctions de chargement depuis Drive
-    # ATTENTION : La fonction load_data originale n'incluait pas le paramètre 'df_type',
-    # mais puisque ce paramètre a été ajouté dans la correction précédente pour
-    # la création du DataFrame de secours, nous devons l'inclure ici pour la cohérence.
+    # Ajout des arguments 'df_type' pour correspondre à la nouvelle signature de load_data
     df_before = load_data(URL_BEFORE, "creditcard_before.csv", 'BEFORE')
     df_after = load_data(URL_AFTER, "creditcard_after.csv", 'AFTER')
 
@@ -144,17 +142,21 @@ def plot_histogram():
         return go.Figure().update_layout(title="Erreur de chargement des données: Colonne 'Amount' manquante")
 
     fig = go.Figure()
-    # 1. Utiliser dropna() pour df_after également (si les données de secours sont utilisées)
-    # 2. S'assurer que les deux histogrammes utilisent les mêmes bins pour une meilleure comparaison
-    # 3. Limiter l'axe x à une plage raisonnable (ex: 0 à 2000) car les montants sont généralement faibles
     
+    # Correction de l'erreur dans la ligne suivante.
+    # L'utilisation de .loc[condition] après .dropna() peut échouer si l'index est réinitialisé.
+    # Il est plus sûr d'appliquer le filtre directement sur la colonne après dropna() ou sur le DataFrame.
+
     # Calculer une plage pour l'histogramme, en évitant les valeurs extrêmes
     max_amount = 2000 
     
-    # Filtrer les montants dans la plage
-    amounts_before = df_before['Amount'].dropna().loc[df_before['Amount'] <= max_amount]
-    amounts_after = df_after['Amount'].dropna().loc[df_after['Amount'] <= max_amount]
+    # Filtrer les montants dans la plage de manière plus robuste
+    amounts_before = df_before['Amount'].dropna()
+    amounts_before = amounts_before[amounts_before <= max_amount]
     
+    amounts_after = df_after['Amount'].dropna()
+    amounts_after = amounts_after[amounts_after <= max_amount]
+
     # Utiliser un nombre de bins raisonnable (ou laisser plotly calculer si nbinsx est absent, mais 70 est OK)
     nb_bins = 70
 
